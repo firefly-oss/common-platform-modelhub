@@ -1,0 +1,128 @@
+package com.catalis.core.modelhub.core.services;
+
+import com.catalis.core.modelhub.interfaces.dtos.VirtualEntityFieldDto;
+import com.catalis.core.modelhub.core.mappers.VirtualEntityFieldMapper;
+import com.catalis.core.modelhub.models.entities.VirtualEntityField;
+import com.catalis.core.modelhub.models.repositories.VirtualEntityFieldRepository;
+import com.catalis.core.modelhub.models.repositories.VirtualEntityRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+/**
+ * Service for virtual entity field operations.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class VirtualEntityFieldService {
+
+    private final VirtualEntityFieldRepository fieldRepository;
+    private final VirtualEntityRepository entityRepository;
+    private final VirtualEntityFieldMapper fieldMapper;
+
+    /**
+     * Get all fields for a virtual entity.
+     *
+     * @param entityId the ID of the entity
+     * @return a Flux emitting the fields
+     */
+    public Flux<VirtualEntityFieldDto> getFieldsByEntityId(UUID entityId) {
+        return fieldRepository.findByEntityIdOrderByOrderIndex(entityId)
+                .map(fieldMapper::toDto);
+    }
+
+    /**
+     * Get a field by ID.
+     *
+     * @param id the ID of the field
+     * @return a Mono emitting the field or empty if not found
+     */
+    public Mono<VirtualEntityFieldDto> getFieldById(UUID id) {
+        return fieldRepository.findById(id)
+                .map(fieldMapper::toDto);
+    }
+
+    /**
+     * Create a new field for a virtual entity.
+     *
+     * @param fieldDto the field to create
+     * @return a Mono emitting the created field
+     */
+    @Transactional
+    public Mono<VirtualEntityFieldDto> createField(VirtualEntityFieldDto fieldDto) {
+        return entityRepository.findById(fieldDto.getEntityId())
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Entity with ID " + fieldDto.getEntityId() + " not found")))
+                .flatMap(entity -> {
+                    return fieldRepository.findByEntityIdAndFieldKey(entity.getId(), fieldDto.getFieldKey())
+                            .hasElement()
+                            .flatMap(exists -> {
+                                if (Boolean.TRUE.equals(exists)) {
+                                    return Mono.error(new IllegalArgumentException("Field with key " + fieldDto.getFieldKey() + " already exists for entity"));
+                                }
+
+                                VirtualEntityField field = fieldMapper.toEntity(fieldDto);
+                                field.setId(UUID.randomUUID());
+                                field.setCreatedAt(LocalDateTime.now());
+                                field.setUpdatedAt(LocalDateTime.now());
+
+                                return fieldRepository.save(field)
+                                        .map(fieldMapper::toDto);
+                            });
+                });
+    }
+
+    /**
+     * Update an existing field.
+     *
+     * @param id       the ID of the field to update
+     * @param fieldDto the updated field data
+     * @return a Mono emitting the updated field
+     */
+    @Transactional
+    public Mono<VirtualEntityFieldDto> updateField(UUID id, VirtualEntityFieldDto fieldDto) {
+        return fieldRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Field with ID " + id + " not found")))
+                .flatMap(existingField -> {
+                    VirtualEntityField updatedField = fieldMapper.toEntity(fieldDto);
+                    updatedField.setId(existingField.getId());
+                    updatedField.setEntityId(existingField.getEntityId());
+                    updatedField.setCreatedAt(existingField.getCreatedAt());
+                    updatedField.setCreatedBy(existingField.getCreatedBy());
+                    updatedField.setUpdatedAt(LocalDateTime.now());
+
+                    return fieldRepository.save(updatedField)
+                            .map(fieldMapper::toDto);
+                });
+    }
+
+    /**
+     * Delete a field.
+     *
+     * @param id the ID of the field to delete
+     * @return a Mono completing when the field is deleted
+     */
+    @Transactional
+    public Mono<Void> deleteField(UUID id) {
+        return fieldRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Field with ID " + id + " not found")))
+                .flatMap(field -> fieldRepository.deleteById(id));
+    }
+
+    /**
+     * Delete all fields for a virtual entity.
+     *
+     * @param entityId the ID of the entity
+     * @return a Mono completing when all fields are deleted
+     */
+    @Transactional
+    public Mono<Void> deleteFieldsByEntityId(UUID entityId) {
+        return fieldRepository.deleteByEntityId(entityId);
+    }
+}

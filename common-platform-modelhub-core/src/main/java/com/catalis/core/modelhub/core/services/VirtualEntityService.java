@@ -1,0 +1,148 @@
+package com.catalis.core.modelhub.core.services;
+
+import com.catalis.core.modelhub.interfaces.dtos.VirtualEntityDto;
+import com.catalis.core.modelhub.interfaces.dtos.VirtualEntitySchemaDto;
+import com.catalis.core.modelhub.core.mappers.VirtualEntityMapper;
+import com.catalis.core.modelhub.models.entities.VirtualEntity;
+import com.catalis.core.modelhub.models.repositories.VirtualEntityRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+/**
+ * Service for virtual entity operations.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class VirtualEntityService {
+
+    private final VirtualEntityRepository virtualEntityRepository;
+    private final VirtualEntityFieldService virtualEntityFieldService;
+    private final VirtualEntityRecordService virtualEntityRecordService;
+    private final VirtualEntityMapper virtualEntityMapper;
+
+    /**
+     * Get all virtual entities.
+     *
+     * @return a Flux emitting all virtual entities
+     */
+    public Flux<VirtualEntityDto> getAllEntities() {
+        return virtualEntityRepository.findAll()
+                .map(virtualEntityMapper::toDto);
+    }
+
+    /**
+     * Get a virtual entity by ID.
+     *
+     * @param id the ID of the entity
+     * @return a Mono emitting the found entity or empty if not found
+     */
+    public Mono<VirtualEntityDto> getEntityById(UUID id) {
+        return virtualEntityRepository.findById(id)
+                .map(virtualEntityMapper::toDto);
+    }
+
+    /**
+     * Get a virtual entity by name.
+     *
+     * @param name the name of the entity
+     * @return a Mono emitting the found entity or empty if not found
+     */
+    public Mono<VirtualEntityDto> getEntityByName(String name) {
+        return virtualEntityRepository.findByName(name)
+                .map(virtualEntityMapper::toDto);
+    }
+
+    /**
+     * Get the schema for a virtual entity.
+     *
+     * @param name the name of the entity
+     * @return a Mono emitting the entity schema or empty if not found
+     */
+    public Mono<VirtualEntitySchemaDto> getEntitySchema(String name) {
+        return virtualEntityRepository.findByNameAndActive(name, true)
+                .flatMap(entity -> {
+                    VirtualEntityDto entityDto = virtualEntityMapper.toDto(entity);
+                    return virtualEntityFieldService.getFieldsByEntityId(entity.getId())
+                            .collectList()
+                            .map(fields -> {
+                                return VirtualEntitySchemaDto.builder()
+                                    .entity(entityDto)
+                                    .fields(fields)
+                                    .build();
+                            });
+                });
+    }
+
+    /**
+     * Create a new virtual entity.
+     *
+     * @param entityDto the entity to create
+     * @return a Mono emitting the created entity
+     */
+    @Transactional
+    public Mono<VirtualEntityDto> createEntity(VirtualEntityDto entityDto) {
+        return virtualEntityRepository.existsByName(entityDto.getName())
+                .flatMap(exists -> {
+                    if (Boolean.TRUE.equals(exists)) {
+                        return Mono.error(new IllegalArgumentException("Entity with name " + entityDto.getName() + " already exists"));
+                    }
+
+                    VirtualEntity entity = virtualEntityMapper.toEntity(entityDto);
+                    entity.setId(UUID.randomUUID());
+                    entity.setCreatedAt(LocalDateTime.now());
+                    entity.setUpdatedAt(LocalDateTime.now());
+
+                    return virtualEntityRepository.save(entity)
+                            .map(virtualEntityMapper::toDto);
+                });
+    }
+
+    /**
+     * Update an existing virtual entity.
+     *
+     * @param id        the ID of the entity to update
+     * @param entityDto the updated entity data
+     * @return a Mono emitting the updated entity
+     */
+    @Transactional
+    public Mono<VirtualEntityDto> updateEntity(UUID id, VirtualEntityDto entityDto) {
+        return virtualEntityRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Entity with ID " + id + " not found")))
+                .flatMap(existingEntity -> {
+                    VirtualEntity updatedEntity = virtualEntityMapper.toEntity(entityDto);
+                    updatedEntity.setId(existingEntity.getId());
+                    updatedEntity.setCreatedAt(existingEntity.getCreatedAt());
+                    updatedEntity.setCreatedBy(existingEntity.getCreatedBy());
+                    updatedEntity.setUpdatedAt(LocalDateTime.now());
+
+                    return virtualEntityRepository.save(updatedEntity)
+                            .map(virtualEntityMapper::toDto);
+                });
+    }
+
+    /**
+     * Delete a virtual entity.
+     *
+     * @param id the ID of the entity to delete
+     * @return a Mono completing when the entity is deleted
+     */
+    @Transactional
+    public Mono<Void> deleteEntity(UUID id) {
+        return virtualEntityRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Entity with ID " + id + " not found")))
+                .flatMap(entity -> {
+                    // First delete all records, then fields, then the entity
+                    return virtualEntityRecordService.deleteRecordsByEntityId(id)
+                            .then(virtualEntityFieldService.deleteFieldsByEntityId(id))
+                            .then(virtualEntityRepository.deleteById(id));
+                });
+    }
+}
