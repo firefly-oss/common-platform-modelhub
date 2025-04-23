@@ -43,7 +43,7 @@ Get ModelHub up and running in minutes:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/catalis/common-platform-modelhub.git
+git clone https://github.com/firefly-oss/common-platform-modelhub.git
 cd common-platform-modelhub
 
 # 2. Start PostgreSQL (Docker)
@@ -492,7 +492,7 @@ createdb modelhub
 
 ```bash
 # Clone repository
-git clone https://github.com/catalis/common-platform-modelhub.git
+git clone https://github.com/firefly-oss/common-platform-modelhub.git
 cd common-platform-modelhub
 
 # Configure database connection
