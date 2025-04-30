@@ -1,5 +1,6 @@
 package com.catalis.core.modelhub.core.services;
 
+import com.catalis.core.modelhub.core.cache.EntityDefinitionCache;
 import com.catalis.core.modelhub.core.mappers.VirtualEntityMapper;
 import com.catalis.core.modelhub.interfaces.dtos.VirtualEntityDto;
 import com.catalis.core.modelhub.interfaces.dtos.VirtualEntityFieldDto;
@@ -37,6 +38,9 @@ public class VirtualEntityServiceTest {
 
     @Mock
     private VirtualEntityMapper virtualEntityMapper;
+
+    @Mock
+    private EntityDefinitionCache entityCache;
 
     @InjectMocks
     private VirtualEntityService virtualEntityService;
@@ -92,59 +96,52 @@ public class VirtualEntityServiceTest {
 
     @Test
     void getEntityById_ShouldReturnEntity() {
-        when(virtualEntityRepository.findById(entityId)).thenReturn(Mono.just(entity));
-        when(virtualEntityMapper.toDto(entity)).thenReturn(entityDto);
+        when(entityCache.getEntityById(eq(entityId), any())).thenReturn(Mono.just(entityDto));
 
         StepVerifier.create(virtualEntityService.getEntityById(entityId))
                 .expectNext(entityDto)
                 .verifyComplete();
 
-        verify(virtualEntityRepository).findById(entityId);
-        verify(virtualEntityMapper).toDto(entity);
+        verify(entityCache).getEntityById(eq(entityId), any());
     }
 
     @Test
     void getEntityById_WhenNotFound_ShouldReturnEmpty() {
-        when(virtualEntityRepository.findById(entityId)).thenReturn(Mono.empty());
+        when(entityCache.getEntityById(eq(entityId), any())).thenReturn(Mono.empty());
 
         StepVerifier.create(virtualEntityService.getEntityById(entityId))
                 .verifyComplete();
 
-        verify(virtualEntityRepository).findById(entityId);
-        verify(virtualEntityMapper, never()).toDto(any());
+        verify(entityCache).getEntityById(eq(entityId), any());
     }
 
     @Test
     void getEntityByName_ShouldReturnEntity() {
         String entityName = "TestEntity";
-        when(virtualEntityRepository.findByName(entityName)).thenReturn(Mono.just(entity));
-        when(virtualEntityMapper.toDto(entity)).thenReturn(entityDto);
+        when(entityCache.getEntityByName(eq(entityName), any())).thenReturn(Mono.just(entityDto));
 
         StepVerifier.create(virtualEntityService.getEntityByName(entityName))
                 .expectNext(entityDto)
                 .verifyComplete();
 
-        verify(virtualEntityRepository).findByName(entityName);
-        verify(virtualEntityMapper).toDto(entity);
+        verify(entityCache).getEntityByName(eq(entityName), any());
     }
 
     @Test
     void getEntityByName_WhenNotFound_ShouldReturnEmpty() {
         String entityName = "NonExistentEntity";
-        when(virtualEntityRepository.findByName(entityName)).thenReturn(Mono.empty());
+        when(entityCache.getEntityByName(eq(entityName), any())).thenReturn(Mono.empty());
 
         StepVerifier.create(virtualEntityService.getEntityByName(entityName))
                 .verifyComplete();
 
-        verify(virtualEntityRepository).findByName(entityName);
-        verify(virtualEntityMapper, never()).toDto(any());
+        verify(entityCache).getEntityByName(eq(entityName), any());
     }
 
     @Test
     void getEntitySchema_ShouldReturnSchema() {
         String entityName = "TestEntity";
-        when(virtualEntityRepository.findByNameAndActive(entityName, true)).thenReturn(Mono.just(entity));
-        when(virtualEntityMapper.toDto(entity)).thenReturn(entityDto);
+        when(entityCache.getEntityByName(eq(entityName), any())).thenReturn(Mono.just(entityDto));
         when(virtualEntityFieldService.getFieldsByEntityId(entityId)).thenReturn(Flux.just(fieldDto));
 
         StepVerifier.create(virtualEntityService.getEntitySchema(entityName))
@@ -154,21 +151,19 @@ public class VirtualEntityServiceTest {
                     schema.getFields().get(0).equals(fieldDto))
                 .verifyComplete();
 
-        verify(virtualEntityRepository).findByNameAndActive(entityName, true);
-        verify(virtualEntityMapper).toDto(entity);
+        verify(entityCache).getEntityByName(eq(entityName), any());
         verify(virtualEntityFieldService).getFieldsByEntityId(entityId);
     }
 
     @Test
     void getEntitySchema_WhenNotFound_ShouldReturnEmpty() {
         String entityName = "NonExistentEntity";
-        when(virtualEntityRepository.findByNameAndActive(entityName, true)).thenReturn(Mono.empty());
+        when(entityCache.getEntityByName(eq(entityName), any())).thenReturn(Mono.empty());
 
         StepVerifier.create(virtualEntityService.getEntitySchema(entityName))
                 .verifyComplete();
 
-        verify(virtualEntityRepository).findByNameAndActive(entityName, true);
-        verify(virtualEntityMapper, never()).toDto(any());
+        verify(entityCache).getEntityByName(eq(entityName), any());
         verify(virtualEntityFieldService, never()).getFieldsByEntityId(any());
     }
 
@@ -242,6 +237,7 @@ public class VirtualEntityServiceTest {
         when(virtualEntityRecordService.deleteRecordsByEntityId(entityId)).thenReturn(Mono.empty());
         when(virtualEntityFieldService.deleteFieldsByEntityId(entityId)).thenReturn(Mono.empty());
         when(virtualEntityRepository.deleteById(entityId)).thenReturn(Mono.empty());
+        doNothing().when(entityCache).invalidateEntity(entityId);
 
         StepVerifier.create(virtualEntityService.deleteEntity(entityId))
                 .verifyComplete();
@@ -250,6 +246,7 @@ public class VirtualEntityServiceTest {
         verify(virtualEntityRecordService).deleteRecordsByEntityId(entityId);
         verify(virtualEntityFieldService).deleteFieldsByEntityId(entityId);
         verify(virtualEntityRepository).deleteById(entityId);
+        verify(entityCache).invalidateEntity(entityId);
     }
 
     @Test

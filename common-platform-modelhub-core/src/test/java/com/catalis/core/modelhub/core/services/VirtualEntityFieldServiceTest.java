@@ -1,5 +1,6 @@
 package com.catalis.core.modelhub.core.services;
 
+import com.catalis.core.modelhub.core.cache.EntityDefinitionCache;
 import com.catalis.core.modelhub.core.mappers.VirtualEntityFieldMapper;
 import com.catalis.core.modelhub.interfaces.dtos.VirtualEntityFieldDto;
 import com.catalis.core.modelhub.interfaces.enums.FieldType;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +36,9 @@ public class VirtualEntityFieldServiceTest {
 
     @Mock
     private VirtualEntityFieldMapper fieldMapper;
+
+    @Mock
+    private EntityDefinitionCache entityCache;
 
     @InjectMocks
     private VirtualEntityFieldService fieldService;
@@ -82,16 +87,13 @@ public class VirtualEntityFieldServiceTest {
 
     @Test
     void getFieldsByEntityId_ShouldReturnFields() {
-        when(fieldRepository.findByEntityIdOrderByOrderIndex(entityId))
-                .thenReturn(Flux.just(field));
-        when(fieldMapper.toDto(field)).thenReturn(fieldDto);
+        when(entityCache.getFieldsByEntityId(eq(entityId), any())).thenReturn(Flux.just(fieldDto));
 
         StepVerifier.create(fieldService.getFieldsByEntityId(entityId))
                 .expectNext(fieldDto)
                 .verifyComplete();
 
-        verify(fieldRepository).findByEntityIdOrderByOrderIndex(entityId);
-        verify(fieldMapper).toDto(field);
+        verify(entityCache).getFieldsByEntityId(eq(entityId), any());
     }
 
     @Test
@@ -126,6 +128,7 @@ public class VirtualEntityFieldServiceTest {
         when(fieldMapper.toEntity(fieldDto)).thenReturn(field);
         when(fieldRepository.save(any(VirtualEntityField.class))).thenReturn(Mono.just(field));
         when(fieldMapper.toDto(field)).thenReturn(fieldDto);
+        doNothing().when(entityCache).invalidateFields(entityId);
 
         StepVerifier.create(fieldService.createField(fieldDto))
                 .expectNext(fieldDto)
@@ -136,6 +139,7 @@ public class VirtualEntityFieldServiceTest {
         verify(fieldMapper).toEntity(fieldDto);
         verify(fieldRepository).save(any(VirtualEntityField.class));
         verify(fieldMapper).toDto(field);
+        verify(entityCache).invalidateFields(entityId);
     }
 
     @Test
@@ -178,6 +182,7 @@ public class VirtualEntityFieldServiceTest {
         when(fieldMapper.toEntity(fieldDto)).thenReturn(field);
         when(fieldRepository.save(any(VirtualEntityField.class))).thenReturn(Mono.just(field));
         when(fieldMapper.toDto(field)).thenReturn(fieldDto);
+        doNothing().when(entityCache).invalidateFields(entityId);
 
         StepVerifier.create(fieldService.updateField(fieldId, fieldDto))
                 .expectNext(fieldDto)
@@ -187,6 +192,7 @@ public class VirtualEntityFieldServiceTest {
         verify(fieldMapper).toEntity(fieldDto);
         verify(fieldRepository).save(any(VirtualEntityField.class));
         verify(fieldMapper).toDto(field);
+        verify(entityCache).invalidateFields(entityId);
     }
 
     @Test
@@ -208,12 +214,14 @@ public class VirtualEntityFieldServiceTest {
     void deleteField_ShouldDeleteField() {
         when(fieldRepository.findById(fieldId)).thenReturn(Mono.just(field));
         when(fieldRepository.deleteById(fieldId)).thenReturn(Mono.empty());
+        doNothing().when(entityCache).invalidateFields(entityId);
 
         StepVerifier.create(fieldService.deleteField(fieldId))
                 .verifyComplete();
 
         verify(fieldRepository).findById(fieldId);
         verify(fieldRepository).deleteById(fieldId);
+        verify(entityCache).invalidateFields(entityId);
     }
 
     @Test
@@ -233,10 +241,12 @@ public class VirtualEntityFieldServiceTest {
     @Test
     void deleteFieldsByEntityId_ShouldDeleteFields() {
         when(fieldRepository.deleteByEntityId(entityId)).thenReturn(Mono.empty());
+        doNothing().when(entityCache).invalidateFields(entityId);
 
         StepVerifier.create(fieldService.deleteFieldsByEntityId(entityId))
                 .verifyComplete();
 
         verify(fieldRepository).deleteByEntityId(entityId);
+        verify(entityCache).invalidateFields(entityId);
     }
 }

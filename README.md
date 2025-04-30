@@ -1,34 +1,54 @@
-# common-platform-modelhub
+# ModelHub: Dynamic Data Modeling Platform
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Quick Start Guide](#quick-start-guide)
 - [Key Features](#key-features)
+- [Quick Start Guide](#quick-start-guide)
+  - [Installation](#installation)
+  - [Creating Your First Entity](#creating-your-first-entity)
+  - [Adding Fields](#adding-fields)
+  - [Working with Records](#working-with-records)
+  - [Querying Data](#querying-data)
+- [Tutorial: Building a Complete Application](#tutorial-building-a-complete-application)
+  - [Step 1: Setting Up Your Data Model](#step-1-setting-up-your-data-model)
+  - [Step 2: Creating Relationships](#step-2-creating-relationships)
+  - [Step 3: Implementing Business Logic](#step-3-implementing-business-logic)
+  - [Step 4: Building the API Layer](#step-4-building-the-api-layer)
 - [Usage Examples](#usage-examples)
-  - [Creating and Managing Entities](#creating-and-managing-entities)
-  - [Working with Fields](#working-with-fields)
-  - [Managing Records](#managing-records)
-  - [SQL-like Queries](#sql-like-queries)
+  - [Entity Management](#entity-management)
+  - [Field Operations](#field-operations)
+  - [Dynamic API Usage](#dynamic-api-usage)
+  - [Advanced Queries](#advanced-queries)
 - [API Reference](#api-reference)
   - [Entity Endpoints](#entity-endpoints)
   - [Field Endpoints](#field-endpoints)
-  - [Record Endpoints](#record-endpoints)
+  - [Dynamic API Endpoints](#dynamic-api-endpoints)
+  - [Query Language Reference](#query-language-reference)
+  - [Field Types and Validation](#field-types-and-validation)
 - [Architecture](#architecture)
+  - [Module Structure](#module-structure)
+  - [Data Flow](#data-flow)
+  - [Database Schema](#database-schema)
 - [Technology Stack](#technology-stack)
-- [Database Schema](#database-schema)
 - [Development Guide](#development-guide)
   - [Prerequisites](#prerequisites)
   - [Setup and Configuration](#setup-and-configuration)
   - [Building and Running](#building-and-running)
   - [Testing](#testing)
 - [Deployment](#deployment)
+  - [Docker Deployment](#docker-deployment)
+  - [Kubernetes Deployment](#kubernetes-deployment)
+  - [Configuration Options](#configuration-options)
 - [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Debugging Tips](#debugging-tips)
+  - [Performance Optimization](#performance-optimization)
 - [Contributing](#contributing)
 
 ## Overview
 
-ModelHub is a reactive, metadata-driven microservice that enables dynamic creation of data models at runtime without schema changes. It allows you to define custom entities with flexible fields and provides powerful query capabilities.
+ModelHub is a reactive, metadata-driven microservice that enables dynamic creation and management of data models at runtime without requiring schema changes. It allows you to define custom entities with flexible fields and provides powerful query capabilities through a RESTful API.
 
 **Why ModelHub?** Traditional systems require downtime and migrations to modify data structures. ModelHub provides a flexible, schema-less approach that allows:
 
@@ -36,8 +56,23 @@ ModelHub is a reactive, metadata-driven microservice that enables dynamic creati
 - **Zero-downtime evolution**: Extend data models without database schema changes
 - **Structured data storage**: Store and query data with full validation
 - **Future-proof systems**: Evolve your application without breaking changes
+- **Dynamic API generation**: Automatically expose RESTful endpoints for your models
+
+## Key Features
+
+- **Dynamic Entity Definitions**: Create and manage data models at runtime
+- **Custom Field Definitions**: Define fields with various data types (string, number, boolean, date, etc.)
+- **Schema Validation**: Automatic validation of records against their entity schema
+- **SQL-like Query Capabilities**: Powerful filtering with SQL-like syntax
+- **Dynamic API Endpoints**: Automatically generated RESTful endpoints for each entity
+- **Reactive Architecture**: Non-blocking, reactive programming with Spring WebFlux
+- **Comprehensive Validation**: Type checking and constraint validation for all data types including arrays, enums, and references
+- **Audit Tracking**: Built-in created/updated timestamps for all records
+- **Performance Optimization**: Efficient caching of entity definitions and fields for improved response times
 
 ## Quick Start Guide
+
+### Installation
 
 Get ModelHub up and running in minutes:
 
@@ -54,7 +89,9 @@ mvn clean install
 java -jar common-platform-modelhub-web/target/common-platform-modelhub.jar
 ```
 
-### Create Your First Entity
+### Creating Your First Entity
+
+Let's create a "customer" entity to store customer information:
 
 ```bash
 # Create a customer entity
@@ -62,14 +99,30 @@ curl -X POST http://localhost:8080/api/v1/entities \
   -H "Content-Type: application/json" \
   -d '{
     "name": "customer",
-    "description": "Customer entity",
+    "description": "Customer information",
     "active": true
   }'
 
-# Save the returned entity ID
-ENTITY_ID="the-returned-id"
+# Response will include the entity ID
+# {
+#   "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+#   "name": "customer",
+#   "description": "Customer information",
+#   "active": true,
+#   "createdAt": "2023-06-15T10:30:00",
+#   "updatedAt": "2023-06-15T10:30:00"
+# }
 
-# Add a field to the entity
+# Save the entity ID for later use
+ENTITY_ID="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+```
+
+### Adding Fields
+
+Now, let's define the structure of our customer entity by adding fields:
+
+```bash
+# Add first name field
 curl -X POST http://localhost:8080/api/v1/fields \
   -H "Content-Type: application/json" \
   -d '{
@@ -81,83 +134,152 @@ curl -X POST http://localhost:8080/api/v1/fields \
     "orderIndex": 1
   }'
 
-# Create a record
-curl -X POST http://localhost:8080/api/v1/records \
+# Add last name field
+curl -X POST http://localhost:8080/api/v1/fields \
   -H "Content-Type: application/json" \
   -d '{
     "entityId": "'$ENTITY_ID'",
-    "payload": {
-      "firstName": "John"
-    }
+    "fieldKey": "lastName",
+    "fieldLabel": "Last Name",
+    "fieldType": "string",
+    "required": true,
+    "orderIndex": 2
   }'
 
-# Query records
-curl -X POST http://localhost:8080/api/v1/records/query \
+# Add email field
+curl -X POST http://localhost:8080/api/v1/fields \
   -H "Content-Type: application/json" \
   -d '{
     "entityId": "'$ENTITY_ID'",
-    "queryString": "firstName = '\''John'\''"
+    "fieldKey": "email",
+    "fieldLabel": "Email Address",
+    "fieldType": "email",
+    "required": true,
+    "orderIndex": 3
+  }'
+
+# Add phone field
+curl -X POST http://localhost:8080/api/v1/fields \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entityId": "'$ENTITY_ID'",
+    "fieldKey": "phone",
+    "fieldLabel": "Phone Number",
+    "fieldType": "phone",
+    "required": false,
+    "orderIndex": 4
   }'
 ```
 
-## Key Features
+### Working with Records
 
-- **Dynamic Entity Definitions**: Create and manage data models at runtime
-- **Custom Field Definitions**: Define fields with various data types (string, number, boolean, date, etc.)
-- **Schema Validation**: Automatic validation of records against their entity schema
-- **SQL-like Query Capabilities**: Powerful filtering with SQL-like syntax
-- **Reactive API**: Non-blocking, reactive programming with Spring WebFlux
-- **RESTful Endpoints**: Well-defined REST API for all operations
-- **Comprehensive Documentation**: API documentation with Swagger/OpenAPI
-- **Audit Fields**: Built-in created/updated timestamps for all records
-
-## Architecture
-
-The project is structured into multiple modules:
-
-- **common-platform-modelhub-interfaces**: Contains DTOs and interfaces
-- **common-platform-modelhub-models**: Contains database entities and repositories
-- **common-platform-modelhub-core**: Contains business logic and services
-- **common-platform-modelhub-web**: Contains REST controllers and web configuration
-
-```
-common-platform-modelhub/
-├── common-platform-modelhub-interfaces/  # DTOs and interfaces
-├── common-platform-modelhub-models/      # Database entities and repositories
-├── common-platform-modelhub-core/        # Business logic and services
-└── common-platform-modelhub-web/         # REST controllers and web configuration
-```
-
-## Technology Stack
-
-- **Java 21**: Latest LTS version with virtual threads support
-- **Spring Boot 3**: Modern application framework
-- **Spring WebFlux**: Reactive programming model
-- **Spring Data R2DBC**: Reactive database access
-- **PostgreSQL with JSONB**: For storing structured data
-- **Flyway**: Database migration and versioning
-- **MapStruct**: For DTO ↔ Entity mapping
-- **Jackson**: For JSON serialization
-- **Swagger/OpenAPI**: API documentation
-- **Maven**: Build and dependency management
-
-## Database Schema
-
-The core database schema consists of three main tables:
-
-1. **virtual_entity**: Stores entity definitions
-2. **virtual_entity_field**: Stores dynamic field definitions per entity
-3. **virtual_entity_record**: Stores structured records as JSON
-
-## Usage Examples
-
-### Creating and Managing Entities
-
-Entities are the foundation of ModelHub. They represent your data models (like "Customer", "Product", etc.).
-
-#### Create an Entity
+Now that we have our entity structure defined, we can create, retrieve, update, and delete customer records using the dynamic API:
 
 ```bash
+# Create a new customer record
+curl -X POST http://localhost:8080/api/customers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "555-123-4567"
+  }'
+
+# Get all customers
+curl -X GET http://localhost:8080/api/customers
+
+# Get a specific customer by ID
+curl -X GET http://localhost:8080/api/customers/3fa85f64-5717-4562-b3fc-2c963f66afa7
+
+# Update a customer
+curl -X PUT http://localhost:8080/api/customers/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Smith",
+    "email": "john.smith@example.com",
+    "phone": "555-123-4567"
+  }'
+
+# Delete a customer
+curl -X DELETE http://localhost:8080/api/customers/3fa85f64-5717-4562-b3fc-2c963f66afa7
+```
+
+### Querying Data
+
+ModelHub provides powerful SQL-like query capabilities:
+
+```bash
+# Find customers with a specific last name
+curl -X POST http://localhost:8080/api/customers/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "lastName = '\''Smith'\''"
+  }'
+
+# Find customers with email from a specific domain
+curl -X POST http://localhost:8080/api/customers/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "email LIKE '\''%example.com%'\''"
+  }'
+
+# Find customers with complex conditions
+curl -X POST http://localhost:8080/api/customers/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "lastName = '\''Smith'\'' AND (email LIKE '\''%example.com%'\'' OR phone IS NOT NULL)",
+    "page": 0,
+    "size": 20
+  }'
+```
+
+## Tutorial: Building a Complete Application
+
+This section walks you through building a complete application using ModelHub.
+
+### Step 1: Setting Up Your Data Model
+
+Let's build a product catalog system with products, categories, and inventory:
+
+```bash
+# 1. Create the category entity
+curl -X POST http://localhost:8080/api/v1/entities \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "category",
+    "description": "Product categories",
+    "active": true
+  }'
+
+# Save the category entity ID
+CATEGORY_ENTITY_ID="the-returned-id"
+
+# 2. Add fields to the category entity
+curl -X POST http://localhost:8080/api/v1/fields \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entityId": "'$CATEGORY_ENTITY_ID'",
+    "fieldKey": "name",
+    "fieldLabel": "Category Name",
+    "fieldType": "string",
+    "required": true,
+    "orderIndex": 1
+  }'
+
+curl -X POST http://localhost:8080/api/v1/fields \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entityId": "'$CATEGORY_ENTITY_ID'",
+    "fieldKey": "description",
+    "fieldLabel": "Description",
+    "fieldType": "string",
+    "required": false,
+    "orderIndex": 2
+  }'
+
+# 3. Create the product entity
 curl -X POST http://localhost:8080/api/v1/entities \
   -H "Content-Type: application/json" \
   -d '{
@@ -165,56 +287,15 @@ curl -X POST http://localhost:8080/api/v1/entities \
     "description": "Product catalog",
     "active": true
   }'
-```
 
-Response:
-```json
-{
-  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "name": "product",
-  "description": "Product catalog",
-  "active": true,
-  "createdAt": "2023-06-15T10:30:00",
-  "updatedAt": "2023-06-15T10:30:00"
-}
-```
+# Save the product entity ID
+PRODUCT_ENTITY_ID="the-returned-id"
 
-#### Get All Entities
-
-```bash
-curl -X GET http://localhost:8080/api/v1/entities
-```
-
-#### Get Entity Schema
-
-```bash
-curl -X GET http://localhost:8080/api/v1/entities/product/schema
-```
-
-#### Update an Entity
-
-```bash
-curl -X PUT http://localhost:8080/api/v1/entities/3fa85f64-5717-4562-b3fc-2c963f66afa6 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "product",
-    "description": "Updated product catalog",
-    "active": true
-  }'
-```
-
-### Working with Fields
-
-Fields define the structure of your entities (like "name", "price", "category", etc.).
-
-#### Add Fields to an Entity
-
-```bash
-# Add a name field
+# 4. Add fields to the product entity
 curl -X POST http://localhost:8080/api/v1/fields \
   -H "Content-Type: application/json" \
   -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "entityId": "'$PRODUCT_ENTITY_ID'",
     "fieldKey": "name",
     "fieldLabel": "Product Name",
     "fieldType": "string",
@@ -222,189 +303,343 @@ curl -X POST http://localhost:8080/api/v1/fields \
     "orderIndex": 1
   }'
 
-# Add a price field
 curl -X POST http://localhost:8080/api/v1/fields \
   -H "Content-Type: application/json" \
   -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "entityId": "'$PRODUCT_ENTITY_ID'",
+    "fieldKey": "description",
+    "fieldLabel": "Description",
+    "fieldType": "string",
+    "required": false,
+    "orderIndex": 2
+  }'
+
+curl -X POST http://localhost:8080/api/v1/fields \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entityId": "'$PRODUCT_ENTITY_ID'",
     "fieldKey": "price",
     "fieldLabel": "Price",
     "fieldType": "number",
     "required": true,
-    "orderIndex": 2
+    "orderIndex": 3
   }'
 
-# Add a category field
+curl -X POST http://localhost:8080/api/v1/fields \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entityId": "'$PRODUCT_ENTITY_ID'",
+    "fieldKey": "categoryId",
+    "fieldLabel": "Category ID",
+    "fieldType": "string",
+    "required": true,
+    "orderIndex": 4
+  }'
+
+curl -X POST http://localhost:8080/api/v1/fields \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entityId": "'$PRODUCT_ENTITY_ID'",
+    "fieldKey": "inStock",
+    "fieldLabel": "In Stock",
+    "fieldType": "boolean",
+    "required": true,
+    "orderIndex": 5
+  }'
+```
+
+### Step 2: Creating Relationships
+
+Now let's create some categories and products with relationships:
+
+```bash
+# 1. Create categories
+curl -X POST http://localhost:8080/api/categories \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Electronics",
+    "description": "Electronic devices and accessories"
+  }'
+
+# Save the category ID
+ELECTRONICS_ID="the-returned-id"
+
+curl -X POST http://localhost:8080/api/categories \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Furniture",
+    "description": "Home and office furniture"
+  }'
+
+# Save the category ID
+FURNITURE_ID="the-returned-id"
+
+# 2. Create products in the Electronics category
+curl -X POST http://localhost:8080/api/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Smartphone X",
+    "description": "Latest smartphone with advanced features",
+    "price": 999.99,
+    "categoryId": "'$ELECTRONICS_ID'",
+    "inStock": true
+  }'
+
+curl -X POST http://localhost:8080/api/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Laptop Pro",
+    "description": "High-performance laptop for professionals",
+    "price": 1499.99,
+    "categoryId": "'$ELECTRONICS_ID'",
+    "inStock": true
+  }'
+
+# 3. Create products in the Furniture category
+curl -X POST http://localhost:8080/api/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Office Desk",
+    "description": "Spacious desk for home office",
+    "price": 299.99,
+    "categoryId": "'$FURNITURE_ID'",
+    "inStock": true
+  }'
+```
+
+### Step 3: Implementing Business Logic
+
+Let's implement some business logic using queries:
+
+```bash
+# 1. Find all products in the Electronics category
+curl -X POST http://localhost:8080/api/products/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "categoryId = '\''$ELECTRONICS_ID'\''"
+  }'
+
+# 2. Find all products over $1000
+curl -X POST http://localhost:8080/api/products/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "price > 1000"
+  }'
+
+# 3. Find all in-stock electronics products, sorted by price
+curl -X POST http://localhost:8080/api/products/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "categoryId = '\''$ELECTRONICS_ID'\'' AND inStock = true ORDER BY price DESC"
+  }'
+```
+
+### Step 4: Building the API Layer
+
+Now let's create a simple inventory management API:
+
+```bash
+# 1. Update product stock status
+curl -X PUT http://localhost:8080/api/products/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Laptop Pro",
+    "description": "High-performance laptop for professionals",
+    "price": 1499.99,
+    "categoryId": "'$ELECTRONICS_ID'",
+    "inStock": false
+  }'
+
+# 2. Get all out-of-stock products
+curl -X POST http://localhost:8080/api/products/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "inStock = false"
+  }'
+
+# 3. Count products by category
+curl -X POST http://localhost:8080/api/products/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "categoryId = '\''$ELECTRONICS_ID'\''"
+  }'
+# Check the "totalCount" field in the response
+```
+
+## Usage Examples
+
+### Entity Management
+
+```bash
+# Create an entity
+curl -X POST http://localhost:8080/api/v1/entities \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "employee",
+    "description": "Employee records",
+    "active": true
+  }'
+
+# Get all entities
+curl -X GET http://localhost:8080/api/v1/entities
+
+# Get entity by ID
+curl -X GET http://localhost:8080/api/v1/entities/3fa85f64-5717-4562-b3fc-2c963f66afa6
+
+# Get entity by name
+curl -X GET http://localhost:8080/api/v1/entities/name/employee
+
+# Get entity schema (entity + fields)
+curl -X GET http://localhost:8080/api/v1/entities/employee/schema
+
+# Update an entity
+curl -X PUT http://localhost:8080/api/v1/entities/3fa85f64-5717-4562-b3fc-2c963f66afa6 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "employee",
+    "description": "Updated employee records description",
+    "active": true
+  }'
+
+# Delete an entity (this will also delete all fields and records)
+curl -X DELETE http://localhost:8080/api/v1/entities/3fa85f64-5717-4562-b3fc-2c963f66afa6
+```
+
+### Field Operations
+
+```bash
+# Create a field
 curl -X POST http://localhost:8080/api/v1/fields \
   -H "Content-Type: application/json" \
   -d '{
     "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "fieldKey": "category",
-    "fieldLabel": "Category",
-    "fieldType": "string",
-    "required": false,
-    "orderIndex": 3
+    "fieldKey": "salary",
+    "fieldLabel": "Salary",
+    "fieldType": "number",
+    "required": true,
+    "orderIndex": 5
   }'
-```
 
-#### Get Fields for an Entity
-
-```bash
+# Get all fields for an entity
 curl -X GET http://localhost:8080/api/v1/fields/entity/3fa85f64-5717-4562-b3fc-2c963f66afa6
-```
 
-### Managing Records
+# Get field by ID
+curl -X GET http://localhost:8080/api/v1/fields/3fa85f64-5717-4562-b3fc-2c963f66afa7
 
-Records are the actual data stored in your entities.
-
-#### Create Records
-
-```bash
-# Create a laptop product
-curl -X POST http://localhost:8080/api/v1/records \
+# Update a field
+curl -X PUT http://localhost:8080/api/v1/fields/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
   -H "Content-Type: application/json" \
   -d '{
     "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "payload": {
-      "name": "Laptop Pro",
-      "price": 1299.99,
-      "category": "Electronics"
-    }
+    "fieldKey": "salary",
+    "fieldLabel": "Annual Salary",
+    "fieldType": "number",
+    "required": true,
+    "orderIndex": 5
   }'
 
-# Create a smartphone product
-curl -X POST http://localhost:8080/api/v1/records \
-  -H "Content-Type: application/json" \
-  -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "payload": {
-      "name": "Smartphone X",
-      "price": 899.99,
-      "category": "Electronics"
-    }
-  }'
-
-# Create a desk product
-curl -X POST http://localhost:8080/api/v1/records \
-  -H "Content-Type: application/json" \
-  -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "payload": {
-      "name": "Office Desk",
-      "price": 349.99,
-      "category": "Furniture"
-    }
-  }'
+# Delete a field
+curl -X DELETE http://localhost:8080/api/v1/fields/3fa85f64-5717-4562-b3fc-2c963f66afa7
 ```
 
-#### Get Records for an Entity
+### Dynamic API Usage
+
+ModelHub provides dynamic API endpoints for each entity in the system:
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/records/entity/3fa85f64-5717-4562-b3fc-2c963f66afa6
-```
+# Get all records for an entity
+curl -X GET http://localhost:8080/api/employees
 
-#### Update a Record
+# Get a specific record
+curl -X GET http://localhost:8080/api/employees/3fa85f64-5717-4562-b3fc-2c963f66afa7
 
-```bash
-curl -X PUT http://localhost:8080/api/v1/records/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
+# Create a new record
+curl -X POST http://localhost:8080/api/employees \
   -H "Content-Type: application/json" \
   -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "payload": {
-      "name": "Laptop Pro 2023",
-      "price": 1399.99,
-      "category": "Electronics"
-    }
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "email": "jane.doe@example.com",
+    "department": "Engineering",
+    "salary": 85000
+  }'
+
+# Update a record
+curl -X PUT http://localhost:8080/api/employees/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "jane.smith@example.com",
+    "department": "Engineering",
+    "salary": 90000
+  }'
+
+# Delete a record
+curl -X DELETE http://localhost:8080/api/employees/3fa85f64-5717-4562-b3fc-2c963f66afa7
+
+# Query records
+curl -X POST http://localhost:8080/api/employees/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "department = '\''Engineering'\'' AND salary > 80000"
   }'
 ```
 
-### SQL-like Queries
+### Advanced Queries
 
-ModelHub provides powerful SQL-like query capabilities for filtering and retrieving records.
-
-#### Basic Query
+ModelHub supports a rich query language for filtering and retrieving records:
 
 ```bash
-# Find all electronics products
-curl -X POST http://localhost:8080/api/v1/records/query \
+# Basic equality
+curl -X POST http://localhost:8080/api/employees/query \
   -H "Content-Type: application/json" \
   -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "queryString": "category = '\''Electronics'\''"
+    "queryString": "department = '\''Engineering'\''"
   }'
-```
 
-#### Complex Query with Multiple Conditions
-
-```bash
-# Find expensive electronics
-curl -X POST http://localhost:8080/api/v1/records/query \
+# Numeric comparisons
+curl -X POST http://localhost:8080/api/employees/query \
   -H "Content-Type: application/json" \
   -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "queryString": "category = '\''Electronics'\'' AND price > 1000"
+    "queryString": "salary > 75000 AND salary <= 100000"
   }'
-```
 
-#### Query with OR Conditions
-
-```bash
-# Find electronics or furniture
-curl -X POST http://localhost:8080/api/v1/records/query \
+# Text search with LIKE
+curl -X POST http://localhost:8080/api/employees/query \
   -H "Content-Type: application/json" \
   -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "queryString": "category = '\''Electronics'\'' OR category = '\''Furniture'\''"
+    "queryString": "email LIKE '\''%example.com%'\''"
   }'
-```
 
-#### Query with Nested Conditions
-
-```bash
-# Find expensive electronics or any furniture
-curl -X POST http://localhost:8080/api/v1/records/query \
+# Multiple conditions with AND/OR
+curl -X POST http://localhost:8080/api/employees/query \
   -H "Content-Type: application/json" \
   -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "queryString": "(category = '\''Electronics'\'' AND price > 1000) OR category = '\''Furniture'\''"
+    "queryString": "(department = '\''Engineering'\'' OR department = '\''Marketing'\'') AND salary > 70000"
   }'
-```
 
-#### Query with Sorting
-
-```bash
-# Find all products, sorted by price (highest first)
-curl -X POST http://localhost:8080/api/v1/records/query \
+# Sorting
+curl -X POST http://localhost:8080/api/employees/query \
   -H "Content-Type: application/json" \
   -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "queryString": "ORDER BY price DESC"
+    "queryString": "ORDER BY salary DESC, lastName ASC"
   }'
-```
 
-#### Query with LIKE Operator
-
-```bash
-# Find products with names containing "Pro"
-curl -X POST http://localhost:8080/api/v1/records/query \
+# Pagination
+curl -X POST http://localhost:8080/api/employees/query \
   -H "Content-Type: application/json" \
   -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "queryString": "name LIKE '\''%Pro%'\''"
-  }'
-```
-
-#### Query with Pagination
-
-```bash
-# Get the second page of results (10 items per page)
-curl -X POST http://localhost:8080/api/v1/records/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "entityId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "queryString": "category = '\''Electronics'\''",
-    "page": 1,
+    "queryString": "department = '\''Engineering'\''",
+    "page": 0,
     "size": 10
+  }'
+
+# NULL checks
+curl -X POST http://localhost:8080/api/employees/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queryString": "department IS NOT NULL AND manager IS NULL"
   }'
 ```
 
@@ -432,18 +667,29 @@ curl -X POST http://localhost:8080/api/v1/records/query \
 | PUT | `/api/v1/fields/{id}` | Update a field |
 | DELETE | `/api/v1/fields/{id}` | Delete a field |
 
-### Record Endpoints
+### Dynamic API Endpoints
+
+ModelHub provides two ways to access dynamic entity APIs:
+
+1. **Standard Dynamic API**: `/api/dynamic/{entityName}/*`
+2. **Clean URL API**: `/api/{entityName}/*` (direct entity name in URL)
+
+Both provide the same functionality but with different URL patterns.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/v1/records/entity/{entityId}` | Get all records for an entity |
-| GET | `/api/v1/records/{id}` | Get record by ID |
-| POST | `/api/v1/records` | Create a new record |
-| PUT | `/api/v1/records/{id}` | Update a record |
-| DELETE | `/api/v1/records/{id}` | Delete a record |
-| POST | `/api/v1/records/query` | Query records with SQL-like capabilities |
+| GET | `/api/{entityName}` | Get all records for an entity |
+| GET | `/api/{entityName}/{id}` | Get record by ID |
+| POST | `/api/{entityName}` | Create a new record |
+| PUT | `/api/{entityName}/{id}` | Update a record |
+| DELETE | `/api/{entityName}/{id}` | Delete a record |
+| POST | `/api/{entityName}/query` | Query records with SQL-like capabilities |
 
-#### SQL Query Operators
+Where `{entityName}` is the name of your entity (e.g., "customers", "products", etc.)
+
+### Query Language Reference
+
+ModelHub supports a SQL-like query language for filtering records:
 
 | Operator | SQL Syntax | Description |
 |----------|------------|-------------|
@@ -460,6 +706,138 @@ curl -X POST http://localhost:8080/api/v1/records/query \
 | Not In List | `NOT IN` or `notIn` | Field value is not in list |
 | Is Null | `IS NULL` or `isNull` | Field is null |
 | Is Not Null | `IS NOT NULL` or `isNotNull` | Field is not null |
+
+### Field Types and Validation
+
+ModelHub supports a variety of field types with comprehensive validation:
+
+| Field Type | Description | Validation |
+|------------|-------------|------------|
+| `string` | Text data | Validates that the value is a string |
+| `number` | Numeric data (float/double) | Validates that the value is a number or can be parsed as one |
+| `integer` | Integer data | Validates that the value is an integer or can be parsed as one |
+| `boolean` | Boolean data (true/false) | Validates that the value is a boolean or "true"/"false" string |
+| `date` | Date without time | Validates ISO format (YYYY-MM-DD) |
+| `datetime` | Date with time | Validates ISO format datetime |
+| `email` | Email address | Validates email format using regex |
+| `phone` | Phone number | Validates phone format using regex |
+| `url` | URL/web address | Validates URL format using regex |
+| `enum` | Value from predefined list | Validates that value is in the allowed options list |
+| `object` | Nested object/map | Validates that value is a map/object |
+| `array` | List of values | Validates that value is an array and can validate each item based on itemType |
+| `reference` | Reference to another entity | Validates UUID format |
+
+#### Advanced Validation Features
+
+- **Required Fields**: Fields marked as required are validated to ensure they are present and not null
+- **Array Item Validation**: For array fields, each item can be validated against a specified type
+- **Enum Validation**: Enum fields are validated against a list of allowed values
+- **Reference Validation**: Reference fields are validated to ensure they contain valid UUIDs
+- **Custom Error Messages**: Detailed error messages for each validation failure
+
+## Architecture
+
+ModelHub is designed with a modular, reactive architecture that enables high scalability and flexibility.
+
+### System Overview
+
+```mermaid
+flowchart TD
+    Client[Client Application] <--> WebModule[Web Module\nControllers & API Endpoints]
+    WebModule <--> CoreModule[Core Module\nBusiness Logic & Services]
+    CoreModule <--> ModelsModule[Models Module\nEntities & Repositories]
+    ModelsModule <--> DB[(PostgreSQL Database)]
+    InterfacesModule[Interfaces Module\nDTOs & Interfaces] <--> WebModule
+    InterfacesModule <--> CoreModule
+
+    subgraph "Request Flow"
+        direction LR
+        req[HTTP Request] --> dynRoute[Dynamic Routing]
+        dynRoute --> validate[Validate Data]
+        validate --> process[Process Request]
+        process --> query[Query/Update Data]
+        query --> resp[HTTP Response]
+    end
+
+    subgraph "Entity Management"
+        direction TB
+        createEntity[Create Entity Definition] --> addFields[Define Entity Fields]
+        addFields --> createRecords[Create/Update Records]
+        createRecords --> queryRecords[Query Records]
+    end
+
+    style WebModule fill:#f9f,stroke:#333,stroke-width:2px
+    style CoreModule fill:#bbf,stroke:#333,stroke-width:2px
+    style ModelsModule fill:#bfb,stroke:#333,stroke-width:2px
+    style InterfacesModule fill:#fbb,stroke:#333,stroke-width:2px
+```
+
+The diagram above illustrates the architecture and data flow of ModelHub. The system consists of four main modules that work together to provide dynamic data modeling capabilities.
+
+### Module Structure
+
+The project is structured into multiple modules:
+
+- **common-platform-modelhub-interfaces**: Contains DTOs and interfaces
+- **common-platform-modelhub-models**: Contains database entities and repositories
+- **common-platform-modelhub-core**: Contains business logic and services
+- **common-platform-modelhub-web**: Contains REST controllers and web configuration
+
+```
+common-platform-modelhub/
+├── common-platform-modelhub-interfaces/  # DTOs and interfaces
+├── common-platform-modelhub-models/      # Database entities and repositories
+├── common-platform-modelhub-core/        # Business logic and services
+└── common-platform-modelhub-web/         # REST controllers and web configuration
+```
+
+### Data Flow
+
+1. **Request Handling**: Incoming HTTP requests are handled by controllers in the web module
+2. **Service Layer**: Business logic is processed in the core module's services
+3. **Data Access**: The models module handles database interactions through reactive repositories
+4. **Response Mapping**: DTOs from the interfaces module are used for API responses
+
+### Database Schema
+
+The core database schema consists of three main tables:
+
+1. **virtual_entity**: Stores entity definitions
+   - id (UUID): Primary key
+   - name (String): Entity name
+   - description (String): Entity description
+   - active (Boolean): Entity status
+   - audit fields (created_at, updated_at, etc.)
+
+2. **virtual_entity_field**: Stores dynamic field definitions per entity
+   - id (UUID): Primary key
+   - entity_id (UUID): Foreign key to virtual_entity
+   - field_key (String): Field identifier
+   - field_label (String): Display name
+   - field_type (String): Data type (string, number, boolean, etc.)
+   - required (Boolean): Whether field is required
+   - options (JSONB): Additional field options
+   - order_index (Integer): Display order
+   - audit fields (created_at, updated_at, etc.)
+
+3. **virtual_entity_record**: Stores structured records as JSON
+   - id (UUID): Primary key
+   - entity_id (UUID): Foreign key to virtual_entity
+   - payload (JSONB): Record data
+   - audit fields (created_at, updated_at, etc.)
+
+## Technology Stack
+
+- **Java 21**: Latest LTS version with virtual threads support
+- **Spring Boot 3**: Modern application framework
+- **Spring WebFlux**: Reactive programming model
+- **Spring Data R2DBC**: Reactive database access
+- **PostgreSQL with JSONB**: For storing structured data
+- **Flyway**: Database migration and versioning
+- **MapStruct**: For DTO ↔ Entity mapping
+- **Jackson**: For JSON serialization
+- **Swagger/OpenAPI**: API documentation
+- **Maven**: Build and dependency management
 
 ## Development Guide
 
@@ -492,7 +870,7 @@ createdb modelhub
 
 ```bash
 # Clone repository
-git clone https://github.com/firefly-oss/common-platform-modelhub.git
+git clone https://github.com/catalis/common-platform-modelhub.git
 cd common-platform-modelhub
 
 # Configure database connection
@@ -527,30 +905,6 @@ java -jar common-platform-modelhub-web/target/common-platform-modelhub.jar
 java -jar -Dspring.profiles.active=dev common-platform-modelhub-web/target/common-platform-modelhub.jar
 ```
 
-### Docker Deployment
-
-```bash
-# Build image
-docker build -t modelhub .
-
-# Run container
-docker run -p 8080:8080 \
-  -e DB_HOST=your-db-host \
-  -e DB_PORT=5432 \
-  -e DB_NAME=modelhub \
-  -e DB_USERNAME=postgres \
-  -e DB_PASSWORD=your-password \
-  modelhub
-```
-
-### API Documentation
-
-Once running, access the Swagger UI at:
-
-```
-http://localhost:8080/swagger-ui.html
-```
-
 ### Testing
 
 ```bash
@@ -566,12 +920,27 @@ mvn test jacoco:report
 
 ## Deployment
 
-ModelHub can be deployed in various environments using Docker or traditional methods.
+ModelHub can be deployed in various environments using Docker or Kubernetes.
 
 ### Docker Deployment
 
+```bash
+# Build Docker image
+docker build -t modelhub .
+
+# Run container
+docker run -p 8080:8080 \
+  -e DB_HOST=your-db-host \
+  -e DB_PORT=5432 \
+  -e DB_NAME=modelhub \
+  -e DB_USERNAME=postgres \
+  -e DB_PASSWORD=your-password \
+  modelhub
+```
+
+Example docker-compose.yml:
+
 ```yaml
-# docker-compose.yml example
 version: '3.8'
 services:
   modelhub:
@@ -607,8 +976,9 @@ volumes:
 
 ### Kubernetes Deployment
 
+Example Kubernetes deployment:
+
 ```yaml
-# kubernetes deployment example
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -677,9 +1047,24 @@ spec:
           periodSeconds: 15
 ```
 
+### Configuration Options
+
+ModelHub can be configured using environment variables or application properties:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `DB_HOST` | Database hostname | localhost |
+| `DB_PORT` | Database port | 5432 |
+| `DB_NAME` | Database name | modelhub |
+| `DB_USERNAME` | Database username | postgres |
+| `DB_PASSWORD` | Database password | postgres |
+| `DB_SSL_MODE` | SSL mode for database connection | disable |
+| `SPRING_PROFILES_ACTIVE` | Active Spring profile | dev |
+| `SERVER_PORT` | Application port | 8080 |
+
 ## Troubleshooting
 
-### Common Issues and Solutions
+### Common Issues
 
 #### Database Connection Problems
 
@@ -741,17 +1126,17 @@ logging:
     org.springframework.r2dbc: DEBUG
 ```
 
-#### Memory Issues
+### Performance Optimization
 
-If you encounter OutOfMemoryError:
-
-```bash
-# Increase heap size
-java -Xmx512m -jar common-platform-modelhub-web/target/common-platform-modelhub.jar
-
-# Monitor memory usage
-jcmd <pid> GC.heap_info
-```
+- **Entity Definition Caching**: ModelHub implements an in-memory cache for entity definitions and field schemas, significantly reducing database queries and improving response times
+  - Time-based cache expiration (5 minutes by default)
+  - Automatic cache invalidation on entity/field updates
+  - Separate caches for entities (by ID and name) and fields
+- **Pagination**: Use pagination for large result sets to reduce memory usage and improve response times
+- **Database Indexing**: Create appropriate indexes in PostgreSQL for frequently queried fields
+- **Projection Queries**: Use projection queries to return only needed fields
+- **Memory Management**: Monitor memory usage and adjust JVM settings if needed
+- **Query Optimization**: Use the SQL query parser to optimize complex queries
 
 ## Contributing
 
@@ -772,6 +1157,8 @@ We welcome contributions to the ModelHub project!
 - Update documentation for API changes
 - Use meaningful commit messages
 
-### Code Review Process
+### Pull Request Process
 
-All submissions require review. We use GitHub pull requests for this purpose.
+1. Ensure all tests pass
+2. Update the README.md with details of changes if appropriate
+3. The PR will be merged once it has been reviewed and approved

@@ -1,5 +1,6 @@
 package com.catalis.core.modelhub.core.services;
 
+import com.catalis.core.modelhub.core.cache.EntityDefinitionCache;
 import com.catalis.core.modelhub.interfaces.dtos.VirtualEntityDto;
 import com.catalis.core.modelhub.interfaces.dtos.VirtualEntitySchemaDto;
 import com.catalis.core.modelhub.core.mappers.VirtualEntityMapper;
@@ -27,6 +28,7 @@ public class VirtualEntityService {
     private final VirtualEntityFieldService virtualEntityFieldService;
     private final VirtualEntityRecordService virtualEntityRecordService;
     private final VirtualEntityMapper virtualEntityMapper;
+    private final EntityDefinitionCache entityCache;
 
     /**
      * Get all virtual entities.
@@ -45,8 +47,10 @@ public class VirtualEntityService {
      * @return a Mono emitting the found entity or empty if not found
      */
     public Mono<VirtualEntityDto> getEntityById(UUID id) {
-        return virtualEntityRepository.findById(id)
-                .map(virtualEntityMapper::toDto);
+        return entityCache.getEntityById(id, entityId -> 
+            virtualEntityRepository.findById(entityId)
+                .map(virtualEntityMapper::toDto)
+        );
     }
 
     /**
@@ -56,8 +60,10 @@ public class VirtualEntityService {
      * @return a Mono emitting the found entity or empty if not found
      */
     public Mono<VirtualEntityDto> getEntityByName(String name) {
-        return virtualEntityRepository.findByName(name)
-                .map(virtualEntityMapper::toDto);
+        return entityCache.getEntityByName(name, entityName -> 
+            virtualEntityRepository.findByName(entityName)
+                .map(virtualEntityMapper::toDto)
+        );
     }
 
     /**
@@ -67,18 +73,20 @@ public class VirtualEntityService {
      * @return a Mono emitting the entity schema or empty if not found
      */
     public Mono<VirtualEntitySchemaDto> getEntitySchema(String name) {
-        return virtualEntityRepository.findByNameAndActive(name, true)
-                .flatMap(entity -> {
-                    VirtualEntityDto entityDto = virtualEntityMapper.toDto(entity);
-                    return virtualEntityFieldService.getFieldsByEntityId(entity.getId())
-                            .collectList()
-                            .map(fields -> {
-                                return VirtualEntitySchemaDto.builder()
-                                    .entity(entityDto)
-                                    .fields(fields)
-                                    .build();
-                            });
-                });
+        return entityCache.getEntityByName(name, entityName -> 
+                virtualEntityRepository.findByNameAndActive(entityName, true)
+                    .map(virtualEntityMapper::toDto)
+            )
+            .flatMap(entityDto -> {
+                return virtualEntityFieldService.getFieldsByEntityId(entityDto.getId())
+                        .collectList()
+                        .map(fields -> {
+                            return VirtualEntitySchemaDto.builder()
+                                .entity(entityDto)
+                                .fields(fields)
+                                .build();
+                        });
+            });
     }
 
     /**
@@ -101,7 +109,12 @@ public class VirtualEntityService {
                     entity.setUpdatedAt(LocalDateTime.now());
 
                     return virtualEntityRepository.save(entity)
-                            .map(virtualEntityMapper::toDto);
+                            .map(virtualEntityMapper::toDto)
+                            .doOnNext(savedEntity -> {
+                                // Cache the newly created entity
+                                log.debug("Caching newly created entity: {}", savedEntity.getName());
+                                // No need to explicitly cache as it will be cached on first access
+                            });
                 });
     }
 
@@ -124,7 +137,12 @@ public class VirtualEntityService {
                     updatedEntity.setUpdatedAt(LocalDateTime.now());
 
                     return virtualEntityRepository.save(updatedEntity)
-                            .map(virtualEntityMapper::toDto);
+                            .map(virtualEntityMapper::toDto)
+                            .doOnNext(savedEntity -> {
+                                // Invalidate the cache for the updated entity
+                                log.debug("Invalidating cache for updated entity: {}", savedEntity.getName());
+                                entityCache.invalidateEntity(id);
+                            });
                 });
     }
 
@@ -142,7 +160,12 @@ public class VirtualEntityService {
                     // First delete all records, then fields, then the entity
                     return virtualEntityRecordService.deleteRecordsByEntityId(id)
                             .then(virtualEntityFieldService.deleteFieldsByEntityId(id))
-                            .then(virtualEntityRepository.deleteById(id));
+                            .then(virtualEntityRepository.deleteById(id))
+                            .doOnSuccess(v -> {
+                                // Invalidate the cache for the deleted entity
+                                log.debug("Invalidating cache for deleted entity with ID: {}", id);
+                                entityCache.invalidateEntity(id);
+                            });
                 });
     }
 }

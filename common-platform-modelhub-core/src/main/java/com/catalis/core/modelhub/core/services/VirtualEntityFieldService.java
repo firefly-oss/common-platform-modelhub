@@ -1,5 +1,6 @@
 package com.catalis.core.modelhub.core.services;
 
+import com.catalis.core.modelhub.core.cache.EntityDefinitionCache;
 import com.catalis.core.modelhub.interfaces.dtos.VirtualEntityFieldDto;
 import com.catalis.core.modelhub.core.mappers.VirtualEntityFieldMapper;
 import com.catalis.core.modelhub.models.entities.VirtualEntityField;
@@ -26,6 +27,7 @@ public class VirtualEntityFieldService {
     private final VirtualEntityFieldRepository fieldRepository;
     private final VirtualEntityRepository entityRepository;
     private final VirtualEntityFieldMapper fieldMapper;
+    private final EntityDefinitionCache entityCache;
 
     /**
      * Get all fields for a virtual entity.
@@ -34,8 +36,10 @@ public class VirtualEntityFieldService {
      * @return a Flux emitting the fields
      */
     public Flux<VirtualEntityFieldDto> getFieldsByEntityId(UUID entityId) {
-        return fieldRepository.findByEntityIdOrderByOrderIndex(entityId)
-                .map(fieldMapper::toDto);
+        return entityCache.getFieldsByEntityId(entityId, id -> 
+            fieldRepository.findByEntityIdOrderByOrderIndex(id)
+                .map(fieldMapper::toDto)
+        );
     }
 
     /**
@@ -73,7 +77,12 @@ public class VirtualEntityFieldService {
                                 field.setUpdatedAt(LocalDateTime.now());
 
                                 return fieldRepository.save(field)
-                                        .map(fieldMapper::toDto);
+                                        .map(fieldMapper::toDto)
+                                        .doOnNext(savedField -> {
+                                            // Invalidate the fields cache for this entity
+                                            log.debug("Invalidating fields cache for entity ID: {}", entity.getId());
+                                            entityCache.invalidateFields(entity.getId());
+                                        });
                             });
                 });
     }
@@ -98,7 +107,12 @@ public class VirtualEntityFieldService {
                     updatedField.setUpdatedAt(LocalDateTime.now());
 
                     return fieldRepository.save(updatedField)
-                            .map(fieldMapper::toDto);
+                            .map(fieldMapper::toDto)
+                            .doOnNext(savedField -> {
+                                // Invalidate the fields cache for this entity
+                                log.debug("Invalidating fields cache for entity ID: {}", existingField.getEntityId());
+                                entityCache.invalidateFields(existingField.getEntityId());
+                            });
                 });
     }
 
@@ -112,7 +126,15 @@ public class VirtualEntityFieldService {
     public Mono<Void> deleteField(UUID id) {
         return fieldRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Field with ID " + id + " not found")))
-                .flatMap(field -> fieldRepository.deleteById(id));
+                .flatMap(field -> {
+                    UUID entityId = field.getEntityId();
+                    return fieldRepository.deleteById(id)
+                            .doOnSuccess(v -> {
+                                // Invalidate the fields cache for this entity
+                                log.debug("Invalidating fields cache for entity ID: {}", entityId);
+                                entityCache.invalidateFields(entityId);
+                            });
+                });
     }
 
     /**
@@ -123,6 +145,11 @@ public class VirtualEntityFieldService {
      */
     @Transactional
     public Mono<Void> deleteFieldsByEntityId(UUID entityId) {
-        return fieldRepository.deleteByEntityId(entityId);
+        return fieldRepository.deleteByEntityId(entityId)
+                .doOnSuccess(v -> {
+                    // Invalidate the fields cache for this entity
+                    log.debug("Invalidating fields cache for entity ID: {}", entityId);
+                    entityCache.invalidateFields(entityId);
+                });
     }
 }
