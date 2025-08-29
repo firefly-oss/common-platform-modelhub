@@ -870,7 +870,7 @@ createdb modelhub
 
 ```bash
 # Clone repository
-git clone https://github.com/catalis/common-platform-modelhub.git
+git clone https://github.com/firefly/common-platform-modelhub.git
 cd common-platform-modelhub
 
 # Configure database connection
@@ -1102,7 +1102,7 @@ export LOGGING_LEVEL_COM_CATALIS=DEBUG
 # Or in application.yaml
 logging:
   level:
-    com.catalis: DEBUG
+    com.firefly: DEBUG
 ```
 
 #### Check Application Health
