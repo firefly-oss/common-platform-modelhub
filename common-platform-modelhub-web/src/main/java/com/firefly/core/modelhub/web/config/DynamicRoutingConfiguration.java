@@ -126,7 +126,7 @@ public class DynamicRoutingConfiguration {
         try {
             id = UUID.fromString(request.pathVariable("id"));
         } catch (IllegalArgumentException e) {
-            return ServerResponse.badRequest().bodyValue(Map.of("error", "Invalid UUID format"));
+            return ServerResponse.badRequest().bodyValue(Map.of("error", "Invalid Long format"));
         }
 
         return entityService.getEntityByName(entityName)
@@ -179,7 +179,7 @@ public class DynamicRoutingConfiguration {
         try {
             id = UUID.fromString(request.pathVariable("id"));
         } catch (IllegalArgumentException e) {
-            return ServerResponse.badRequest().bodyValue(Map.of("error", "Invalid UUID format"));
+            return ServerResponse.badRequest().bodyValue(Map.of("error", "Invalid Long format"));
         }
 
         return entityService.getEntityByName(entityName)
@@ -213,7 +213,7 @@ public class DynamicRoutingConfiguration {
         try {
             id = UUID.fromString(request.pathVariable("id"));
         } catch (IllegalArgumentException e) {
-            return ServerResponse.badRequest().bodyValue(Map.of("error", "Invalid UUID format"));
+            return ServerResponse.badRequest().bodyValue(Map.of("error", "Invalid Long format"));
         }
 
         return entityService.getEntityByName(entityName)

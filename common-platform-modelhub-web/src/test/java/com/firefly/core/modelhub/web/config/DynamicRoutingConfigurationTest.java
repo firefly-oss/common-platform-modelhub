@@ -147,7 +147,7 @@ public class DynamicRoutingConfigurationTest {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.error").isEqualTo("Invalid UUID format");
+                .jsonPath("$.error").isEqualTo("Invalid Long format");
     }
 
     @Test

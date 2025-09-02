@@ -232,7 +232,7 @@ public class RecordValidator {
                     return "Field '" + fieldKey + "' must be a valid reference ID";
                 }
 
-                // Validate UUID format if it's a string
+                // Validate Long format if it's a string
                 if (value instanceof String) {
                     try {
                         UUID.fromString((String) value);
