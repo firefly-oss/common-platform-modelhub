@@ -18,6 +18,7 @@
         <module>common-platform-modelhub-interfaces</module>
         <module>common-platform-modelhub-models</module>
         <module>common-platform-modelhub-web</module>
+        <module>common-platform-modelhub-sdk</module>
     </modules>
 
     <properties>
@@ -37,6 +38,11 @@
             <dependency>
                 <groupId>com.firefly</groupId>
                 <artifactId>common-platform-modelhub-models</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.firefly</groupId>
+                <artifactId>common-platform-modelhub-sdk</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
