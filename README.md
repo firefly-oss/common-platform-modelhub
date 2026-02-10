@@ -105,12 +105,12 @@ curl -X POST http://localhost:8080/api/v1/entities \
 
 # Response will include the entity ID
 # {
-#   "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-#   "name": "customer",
-#   "description": "Customer information",
-#   "active": true,
-#   "createdAt": "2023-06-15T10:30:00",
-#   "updatedAt": "2023-06-15T10:30:00"
+# "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+# "name": "customer",
+# "description": "Customer information",
+# "active": true,
+# "createdAt": "2023-06-15T10:30:00",
+# "updatedAt": "2023-06-15T10:30:00"
 # }
 
 # Save the entity ID for later use
@@ -177,7 +177,7 @@ Now that we have our entity structure defined, we can create, retrieve, update, 
 
 ```bash
 # Create a new customer record
-curl -X POST http://localhost:8080/api/customers \
+curl -X POST http://localhost:8080/api/dynamic/customers \
   -H "Content-Type: application/json" \
   -d '{
     "firstName": "John",
@@ -187,13 +187,13 @@ curl -X POST http://localhost:8080/api/customers \
   }'
 
 # Get all customers
-curl -X GET http://localhost:8080/api/customers
+curl -X GET http://localhost:8080/api/dynamic/customers
 
 # Get a specific customer by ID
-curl -X GET http://localhost:8080/api/customers/3fa85f64-5717-4562-b3fc-2c963f66afa7
+curl -X GET http://localhost:8080/api/dynamic/customers/3fa85f64-5717-4562-b3fc-2c963f66afa7
 
 # Update a customer
-curl -X PUT http://localhost:8080/api/customers/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
+curl -X PUT http://localhost:8080/api/dynamic/customers/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
   -H "Content-Type: application/json" \
   -d '{
     "firstName": "John",
@@ -203,7 +203,7 @@ curl -X PUT http://localhost:8080/api/customers/3fa85f64-5717-4562-b3fc-2c963f66
   }'
 
 # Delete a customer
-curl -X DELETE http://localhost:8080/api/customers/3fa85f64-5717-4562-b3fc-2c963f66afa7
+curl -X DELETE http://localhost:8080/api/dynamic/customers/3fa85f64-5717-4562-b3fc-2c963f66afa7
 ```
 
 ### Querying Data
@@ -212,21 +212,21 @@ ModelHub provides powerful SQL-like query capabilities:
 
 ```bash
 # Find customers with a specific last name
-curl -X POST http://localhost:8080/api/customers/query \
+curl -X POST http://localhost:8080/api/dynamic/customers/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "lastName = '\''Smith'\''"
   }'
 
 # Find customers with email from a specific domain
-curl -X POST http://localhost:8080/api/customers/query \
+curl -X POST http://localhost:8080/api/dynamic/customers/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "email LIKE '\''%example.com%'\''"
   }'
 
 # Find customers with complex conditions
-curl -X POST http://localhost:8080/api/customers/query \
+curl -X POST http://localhost:8080/api/dynamic/customers/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "lastName = '\''Smith'\'' AND (email LIKE '\''%example.com%'\'' OR phone IS NOT NULL)",
@@ -354,7 +354,7 @@ Now let's create some categories and products with relationships:
 
 ```bash
 # 1. Create categories
-curl -X POST http://localhost:8080/api/categories \
+curl -X POST http://localhost:8080/api/dynamic/categories \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Electronics",
@@ -364,7 +364,7 @@ curl -X POST http://localhost:8080/api/categories \
 # Save the category ID
 ELECTRONICS_ID="the-returned-id"
 
-curl -X POST http://localhost:8080/api/categories \
+curl -X POST http://localhost:8080/api/dynamic/categories \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Furniture",
@@ -375,7 +375,7 @@ curl -X POST http://localhost:8080/api/categories \
 FURNITURE_ID="the-returned-id"
 
 # 2. Create products in the Electronics category
-curl -X POST http://localhost:8080/api/products \
+curl -X POST http://localhost:8080/api/dynamic/products \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Smartphone X",
@@ -385,7 +385,7 @@ curl -X POST http://localhost:8080/api/products \
     "inStock": true
   }'
 
-curl -X POST http://localhost:8080/api/products \
+curl -X POST http://localhost:8080/api/dynamic/products \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Laptop Pro",
@@ -396,7 +396,7 @@ curl -X POST http://localhost:8080/api/products \
   }'
 
 # 3. Create products in the Furniture category
-curl -X POST http://localhost:8080/api/products \
+curl -X POST http://localhost:8080/api/dynamic/products \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Office Desk",
@@ -413,21 +413,21 @@ Let's implement some business logic using queries:
 
 ```bash
 # 1. Find all products in the Electronics category
-curl -X POST http://localhost:8080/api/products/query \
+curl -X POST http://localhost:8080/api/dynamic/products/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "categoryId = '\''$ELECTRONICS_ID'\''"
   }'
 
 # 2. Find all products over $1000
-curl -X POST http://localhost:8080/api/products/query \
+curl -X POST http://localhost:8080/api/dynamic/products/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "price > 1000"
   }'
 
 # 3. Find all in-stock electronics products, sorted by price
-curl -X POST http://localhost:8080/api/products/query \
+curl -X POST http://localhost:8080/api/dynamic/products/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "categoryId = '\''$ELECTRONICS_ID'\'' AND inStock = true ORDER BY price DESC"
@@ -440,7 +440,7 @@ Now let's create a simple inventory management API:
 
 ```bash
 # 1. Update product stock status
-curl -X PUT http://localhost:8080/api/products/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
+curl -X PUT http://localhost:8080/api/dynamic/products/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Laptop Pro",
@@ -451,14 +451,14 @@ curl -X PUT http://localhost:8080/api/products/3fa85f64-5717-4562-b3fc-2c963f66a
   }'
 
 # 2. Get all out-of-stock products
-curl -X POST http://localhost:8080/api/products/query \
+curl -X POST http://localhost:8080/api/dynamic/products/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "inStock = false"
   }'
 
 # 3. Count products by category
-curl -X POST http://localhost:8080/api/products/query \
+curl -X POST http://localhost:8080/api/dynamic/products/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "categoryId = '\''$ELECTRONICS_ID'\''"
@@ -548,13 +548,13 @@ ModelHub provides dynamic API endpoints for each entity in the system:
 
 ```bash
 # Get all records for an entity
-curl -X GET http://localhost:8080/api/employees
+curl -X GET http://localhost:8080/api/dynamic/employees
 
 # Get a specific record
-curl -X GET http://localhost:8080/api/employees/3fa85f64-5717-4562-b3fc-2c963f66afa7
+curl -X GET http://localhost:8080/api/dynamic/employees/3fa85f64-5717-4562-b3fc-2c963f66afa7
 
 # Create a new record
-curl -X POST http://localhost:8080/api/employees \
+curl -X POST http://localhost:8080/api/dynamic/employees \
   -H "Content-Type: application/json" \
   -d '{
     "firstName": "Jane",
@@ -565,7 +565,7 @@ curl -X POST http://localhost:8080/api/employees \
   }'
 
 # Update a record
-curl -X PUT http://localhost:8080/api/employees/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
+curl -X PUT http://localhost:8080/api/dynamic/employees/3fa85f64-5717-4562-b3fc-2c963f66afa7 \
   -H "Content-Type: application/json" \
   -d '{
     "firstName": "Jane",
@@ -576,10 +576,10 @@ curl -X PUT http://localhost:8080/api/employees/3fa85f64-5717-4562-b3fc-2c963f66
   }'
 
 # Delete a record
-curl -X DELETE http://localhost:8080/api/employees/3fa85f64-5717-4562-b3fc-2c963f66afa7
+curl -X DELETE http://localhost:8080/api/dynamic/employees/3fa85f64-5717-4562-b3fc-2c963f66afa7
 
 # Query records
-curl -X POST http://localhost:8080/api/employees/query \
+curl -X POST http://localhost:8080/api/dynamic/employees/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "department = '\''Engineering'\'' AND salary > 80000"
@@ -592,42 +592,42 @@ ModelHub supports a rich query language for filtering and retrieving records:
 
 ```bash
 # Basic equality
-curl -X POST http://localhost:8080/api/employees/query \
+curl -X POST http://localhost:8080/api/dynamic/employees/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "department = '\''Engineering'\''"
   }'
 
 # Numeric comparisons
-curl -X POST http://localhost:8080/api/employees/query \
+curl -X POST http://localhost:8080/api/dynamic/employees/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "salary > 75000 AND salary <= 100000"
   }'
 
 # Text search with LIKE
-curl -X POST http://localhost:8080/api/employees/query \
+curl -X POST http://localhost:8080/api/dynamic/employees/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "email LIKE '\''%example.com%'\''"
   }'
 
 # Multiple conditions with AND/OR
-curl -X POST http://localhost:8080/api/employees/query \
+curl -X POST http://localhost:8080/api/dynamic/employees/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "(department = '\''Engineering'\'' OR department = '\''Marketing'\'') AND salary > 70000"
   }'
 
 # Sorting
-curl -X POST http://localhost:8080/api/employees/query \
+curl -X POST http://localhost:8080/api/dynamic/employees/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "ORDER BY salary DESC, lastName ASC"
   }'
 
 # Pagination
-curl -X POST http://localhost:8080/api/employees/query \
+curl -X POST http://localhost:8080/api/dynamic/employees/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "department = '\''Engineering'\''",
@@ -636,7 +636,7 @@ curl -X POST http://localhost:8080/api/employees/query \
   }'
 
 # NULL checks
-curl -X POST http://localhost:8080/api/employees/query \
+curl -X POST http://localhost:8080/api/dynamic/employees/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryString": "department IS NOT NULL AND manager IS NULL"
@@ -669,21 +669,16 @@ curl -X POST http://localhost:8080/api/employees/query \
 
 ### Dynamic API Endpoints
 
-ModelHub provides two ways to access dynamic entity APIs:
-
-1. **Standard Dynamic API**: `/api/dynamic/{entityName}/*`
-2. **Clean URL API**: `/api/{entityName}/*` (direct entity name in URL)
-
-Both provide the same functionality but with different URL patterns.
+ModelHub provides dynamic API endpoints under the `/api/dynamic/` path prefix:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/{entityName}` | Get all records for an entity |
-| GET | `/api/{entityName}/{id}` | Get record by ID |
-| POST | `/api/{entityName}` | Create a new record |
-| PUT | `/api/{entityName}/{id}` | Update a record |
-| DELETE | `/api/{entityName}/{id}` | Delete a record |
-| POST | `/api/{entityName}/query` | Query records with SQL-like capabilities |
+| GET | `/api/dynamic/{entityName}` | Get all records for an entity |
+| GET | `/api/dynamic/{entityName}/{id}` | Get record by ID |
+| POST | `/api/dynamic/{entityName}` | Create a new record |
+| PUT | `/api/dynamic/{entityName}/{id}` | Update a record |
+| DELETE | `/api/dynamic/{entityName}/{id}` | Delete a record |
+| POST | `/api/dynamic/{entityName}/query` | Query records with SQL-like capabilities |
 
 Where `{entityName}` is the name of your entity (e.g., "customers", "products", etc.)
 
@@ -828,13 +823,13 @@ The core database schema consists of three main tables:
 
 ## Technology Stack
 
-- **Java 21**: Latest LTS version with virtual threads support
+- **Java 25**: Latest LTS version with virtual threads support
 - **Spring Boot 3**: Modern application framework
 - **Spring WebFlux**: Reactive programming model
 - **Spring Data R2DBC**: Reactive database access
 - **PostgreSQL with JSONB**: For storing structured data
 - **Flyway**: Database migration and versioning
-- **MapStruct**: For DTO ↔ Entity mapping
+- **MapStruct**: For DTO Entity mapping
 - **Jackson**: For JSON serialization
 - **Swagger/OpenAPI**: API documentation
 - **Maven**: Build and dependency management
@@ -843,7 +838,7 @@ The core database schema consists of three main tables:
 
 ### Prerequisites
 
-- Java 21
+- Java 25
 - PostgreSQL 12+
 - Maven 3.8+
 - Docker (optional)
@@ -853,7 +848,7 @@ The core database schema consists of three main tables:
 #### 1. Install Dependencies
 
 ```bash
-# Install Java 21 (using SDKMan)
+# Install Java 25 (using SDKMan)
 sdk install java 21-open
 
 # Install PostgreSQL (or use Docker as shown in Quick Start)
