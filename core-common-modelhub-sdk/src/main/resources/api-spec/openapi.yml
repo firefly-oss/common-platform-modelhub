@@ -1,6 +1,6 @@
 openapi: 3.0.1
 info:
-  title: common-platform-modelhub
+  title: core-common-modelhub
   description: ModelHub Core Application
   contact:
     name: Firefly Software Solutions Inc

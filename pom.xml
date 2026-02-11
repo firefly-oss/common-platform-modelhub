@@ -11,14 +11,14 @@
     </parent>
 
     <groupId>com.firefly</groupId>
-    <artifactId>common-platform-modelhub</artifactId>
+    <artifactId>core-common-modelhub</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>common-platform-modelhub-core</module>
-        <module>common-platform-modelhub-interfaces</module>
-        <module>common-platform-modelhub-models</module>
-        <module>common-platform-modelhub-web</module>
-        <module>common-platform-modelhub-sdk</module>
+        <module>core-common-modelhub-core</module>
+        <module>core-common-modelhub-interfaces</module>
+        <module>core-common-modelhub-models</module>
+        <module>core-common-modelhub-web</module>
+        <module>core-common-modelhub-sdk</module>
     </modules>
 
     <properties>
@@ -27,9 +27,9 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <fireflyframework.bom.version>26.01.01</fireflyframework.bom.version>
-        <common-platform-modelhub.version>
+        <core-common-modelhub.version>
             1.0.0-SNAPSHOT
-        </common-platform-modelhub.version>
+        </core-common-modelhub.version>
     </properties>
 
     <dependencyManagement>
@@ -44,27 +44,27 @@
             <!-- Internal modules -->
             <dependency>
                 <groupId>com.firefly</groupId>
-                <artifactId>common-platform-modelhub-interfaces</artifactId>
+                <artifactId>core-common-modelhub-interfaces</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.firefly</groupId>
-                <artifactId>common-platform-modelhub-models</artifactId>
+                <artifactId>core-common-modelhub-models</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.firefly</groupId>
-                <artifactId>common-platform-modelhub-sdk</artifactId>
+                <artifactId>core-common-modelhub-sdk</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.firefly</groupId>
-                <artifactId>common-platform-modelhub-core</artifactId>
+                <artifactId>core-common-modelhub-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.firefly</groupId>
-                <artifactId>common-platform-modelhub-web</artifactId>
+                <artifactId>core-common-modelhub-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

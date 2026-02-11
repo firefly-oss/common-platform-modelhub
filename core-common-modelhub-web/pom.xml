@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.firefly</groupId>
-        <artifactId>common-platform-modelhub</artifactId>
+        <artifactId>core-common-modelhub</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>common-platform-modelhub-web</artifactId>
+    <artifactId>core-common-modelhub-web</artifactId>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,11 +19,11 @@
         <!-- Internal modules -->
         <dependency>
             <groupId>com.firefly</groupId>
-            <artifactId>common-platform-modelhub-core</artifactId>
+            <artifactId>core-common-modelhub-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.firefly</groupId>
-            <artifactId>common-platform-modelhub-interfaces</artifactId>
+            <artifactId>core-common-modelhub-interfaces</artifactId>
         </dependency>
 
         <!-- Common Libraries -->

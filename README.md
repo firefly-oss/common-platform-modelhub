@@ -78,15 +78,15 @@ Get ModelHub up and running in minutes:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/firefly-oss/common-platform-modelhub.git
-cd common-platform-modelhub
+git clone https://github.com/firefly-oss/core-common-modelhub.git
+cd core-common-modelhub
 
 # 2. Start PostgreSQL (Docker)
 docker run --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:14
 
 # 3. Build and run the application
 mvn clean install
-java -jar common-platform-modelhub-web/target/common-platform-modelhub.jar
+java -jar core-common-modelhub-web/target/core-common-modelhub.jar
 ```
 
 ### Creating Your First Entity
@@ -773,17 +773,17 @@ The diagram above illustrates the architecture and data flow of ModelHub. The sy
 
 The project is structured into multiple modules:
 
-- **common-platform-modelhub-interfaces**: Contains DTOs and interfaces
-- **common-platform-modelhub-models**: Contains database entities and repositories
-- **common-platform-modelhub-core**: Contains business logic and services
-- **common-platform-modelhub-web**: Contains REST controllers and web configuration
+- **core-common-modelhub-interfaces**: Contains DTOs and interfaces
+- **core-common-modelhub-models**: Contains database entities and repositories
+- **core-common-modelhub-core**: Contains business logic and services
+- **core-common-modelhub-web**: Contains REST controllers and web configuration
 
 ```
-common-platform-modelhub/
-├── common-platform-modelhub-interfaces/  # DTOs and interfaces
-├── common-platform-modelhub-models/      # Database entities and repositories
-├── common-platform-modelhub-core/        # Business logic and services
-└── common-platform-modelhub-web/         # REST controllers and web configuration
+core-common-modelhub/
+├── core-common-modelhub-interfaces/  # DTOs and interfaces
+├── core-common-modelhub-models/      # Database entities and repositories
+├── core-common-modelhub-core/        # Business logic and services
+└── core-common-modelhub-web/         # REST controllers and web configuration
 ```
 
 ### Data Flow
@@ -865,8 +865,8 @@ createdb modelhub
 
 ```bash
 # Clone repository
-git clone https://github.com/firefly/common-platform-modelhub.git
-cd common-platform-modelhub
+git clone https://github.com/firefly/core-common-modelhub.git
+cd core-common-modelhub
 
 # Configure database connection
 # Edit application.yaml or set environment variables:
@@ -891,13 +891,13 @@ export DB_SSL_MODE=disable
 mvn clean install
 
 # Run with Maven
-mvn spring-boot:run -pl common-platform-modelhub-web
+mvn spring-boot:run -pl core-common-modelhub-web
 
 # Or run the JAR
-java -jar common-platform-modelhub-web/target/common-platform-modelhub.jar
+java -jar core-common-modelhub-web/target/core-common-modelhub.jar
 
 # Run with specific profile
-java -jar -Dspring.profiles.active=dev common-platform-modelhub-web/target/common-platform-modelhub.jar
+java -jar -Dspring.profiles.active=dev core-common-modelhub-web/target/core-common-modelhub.jar
 ```
 
 ### Testing
@@ -907,7 +907,7 @@ java -jar -Dspring.profiles.active=dev common-platform-modelhub-web/target/commo
 mvn test
 
 # Run tests for a specific module
-mvn test -pl common-platform-modelhub-core
+mvn test -pl core-common-modelhub-core
 
 # Run with coverage report
 mvn test jacoco:report
